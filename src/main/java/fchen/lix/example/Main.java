@@ -8,5 +8,7 @@ public class Main {
     Work work = new Work();
     work.doSomething();
     LixDecorator.closeClient();
+
+    // test pull request
   }
 }
