@@ -1,22 +1,20 @@
-package fchen.lix.parser;
+package fchen.lix.offline;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
-import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import fchen.lix.common.LixDecorator;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Optional;
 
 
 public class Parser {
@@ -59,7 +57,8 @@ public class Parser {
       }
     }.visit(cu, null);
 
-    System.out.println(cu);
+    //System.out.println(cu);
+    writeToFile(file, cu.toString());
   }
 
   private static boolean isMatch(MethodCallExpr n) {
@@ -68,5 +67,11 @@ public class Parser {
         .orElse(false);
     boolean isNameMatch = "decorateMethods".equals(n.getNameAsString());
     return isScopeMatch && isNameMatch;
+  }
+
+  private static void writeToFile(File file, String content ) throws IOException {
+    BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+    writer.write(content);
+    writer.close();
   }
 }
