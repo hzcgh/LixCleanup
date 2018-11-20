@@ -2,6 +2,7 @@ package fchen.lix.offline;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MemberValuePair;
@@ -15,9 +16,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class Parser {
+  private static final String ENABLED = "\"enabled\"";
 
   public static void main(String[] args) throws IOException {
     File file = new File("/Users/fchen1/IdeaProjects/TestTmp/src/main/java/fchen/lix/example/Work.java");
@@ -27,6 +31,7 @@ public class Parser {
   public static void inspectJavaFile(File file) throws IOException {
     CompilationUnit cu;
     FileInputStream in = new FileInputStream(file);
+    Set<Node> nodesToBeRemoved = new HashSet<>();
     try {
       cu = JavaParser.parse(in);
     } finally {
@@ -36,11 +41,19 @@ public class Parser {
       @Override
       public void visit(MethodDeclaration n, Object arg) {
         super.visit(n, arg);
-        //System.out.println(n.getName());
         n.getAnnotations().forEach(annotation -> {
           if (annotation.getClass().equals(NormalAnnotationExpr.class)) {
+            boolean shouldMethodBeRemoved = true;
             for (MemberValuePair pair : ((NormalAnnotationExpr) annotation).getPairs()) {
-              //System.out.println(pair.getName() + " : " + pair.getValue());
+              // TODO here we can get lix key and treatment name, hence we can check if it's 100% ramped
+              if (ENABLED.equals(pair.getValue().toString())) {
+                shouldMethodBeRemoved = false;
+              }
+            }
+            if (shouldMethodBeRemoved) {
+              nodesToBeRemoved.add(n);
+            } else {
+              nodesToBeRemoved.add(annotation);
             }
           }
         });
@@ -48,15 +61,12 @@ public class Parser {
 
       @Override
       public void visit(MethodCallExpr n, Object arg) {
-        //System.out.println("Method: " + n.getScope().get() + " " + n.getNameAsString());
-        //System.out.println(n.getParentNode().get());
         if (isMatch(n)) {
           n.removeScope().setName("enabled").setArguments(new NodeList<>());
-          //System.out.println(n.remove());
         }
       }
     }.visit(cu, null);
-
+    nodesToBeRemoved.forEach(Node::remove);
     //System.out.println(cu);
     writeToFile(file, cu.toString());
   }
